@@ -1,0 +1,244 @@
+/*
+    Stylesheet for index.html
+
+
+*/
+
+/*
+Z-index Key:
+notebook - 5
+buttons, toolbar - 100
+*/
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* -- EXIT BUTTON -- */
+.exit-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    gap: 10px; /* Increased gap for better spacing */
+    z-index: 100;
+}
+
+.exit-button button {
+    padding: 12px;
+    background-color: #be0d16ea;
+    border: none;
+    border-radius: 18px; /* Rounded buttons with more consistent curvature */
+    color: #ffffff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.exit-button button:hover {
+    background-color: #f13030;
+}
+
+
+/* -- SAVE/LOAD BUTTONS -- */
+.save-buttons {
+    position: fixed;
+    top: 20px;
+    right: 175px;
+    display: flex;
+    gap: 10px; /* Increased gap for better spacing */
+    z-index: 100;
+}
+
+.save-buttons button {
+    padding: 12px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 12px; /* Rounded buttons with more consistent curvature */
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.5s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.save-buttons button:hover {
+    background-color: #0056b3;
+}
+
+@media (max-width: 0px) {
+/* -- Notebook Lines Button         REMOVE MEDIA QUERY WHEN FIXED*/
+.lines-button {
+    position: fixed;
+    bottom: 10px;
+    right: 20px;
+    display: flex;
+    gap: 10px; /* Increased gap for better spacing */
+    z-index: 100;
+}
+.lines-button button {
+    padding: 12px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 12px; /* Rounded buttons with more consistent curvature */
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.lines-button button:hover {
+    background-color: #0056b3;
+}
+}
+
+
+/* -- TOOL BAR -- */
+.toolbar {
+    position: fixed;
+    top: 10px;
+    right: 30px;
+    background: #333;
+    padding: 12px;
+    display: flex;
+    justify-content: space-around;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    z-index: 10;
+}
+
+.tool-button, .toolbar button {
+    padding: 10px;
+    cursor: pointer;
+    color: #fff;
+    background: none;
+    border: none;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tool-button.active, .toolbar button.active {
+    color: #00bfa5;
+}
+
+.tool-button:hover, .toolbar button:hover {
+    color: #ac6c18;
+}
+
+
+/* -- TO-DO LIST -- */
+.to-doBar {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    justify-content: flex-start; /* Align items to the top */
+    align-items: flex-start; /* Align items to the left */
+    position: fixed;
+    bottom: 5px;
+    left: 19px;
+    background: #333;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); /* Softer shadow */
+    border-radius: 12px;
+    z-index: 10;
+    max-width: 210px; /* Adjusted max-width */
+    height: auto; /* Auto-adjust height */
+    transition: max-height 0.3s ease;
+    overflow: hidden;
+    max-height: 500px;
+}
+
+.to-doBar.collapsed{
+    max-height: 0;
+    padding: 0;
+}
+.to-doBar h3, ul {
+    color: white;
+}
+
+
+
+button#toggleToDoSection {
+    position: fixed;
+    bottom: 3px; /* Adjust as needed to avoid overlap with to-do bar */
+    left: 5px;
+    background-color: #4428a8;
+    color: white;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+}
+button#toggleToDoSection.collapsed {
+    bottom: 10px; /* Move closer to the bottom left when collapsed */
+    left: 5px; /* Move closer to the bottom left when collapsed */
+}
+button#toggleToDoSection i {
+    color: white;
+}
+
+.to-doBar button {
+    padding: 3px 8px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 8px; /* Rounded corners for consistency */
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.to-doBar button:hover {
+    background-color: #0056b3;
+}
+
+
+/* -- NOTEBOOK -- */
+.notebook-container {
+    width: 100%;
+    height: 100vh;
+    border: 1px solid #ac9898;
+    position: relative;
+    z-index: 5;
+}
+
+#drawingCanvas {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+}
+
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .save-buttons {
+        right: 10px; /* Adjust for smaller screens */
+    }
+
+    .to-doBar {
+        max-width: 220px; /* Smaller width on mobile */
+        bottom: 20px; /* Slightly higher from the bottom */
+        left: 5px; /* Adjust left positioning */
+    }
+
+    .toolbar {
+        right: 15px; /* Adjust toolbar position */
+        padding: 8px;
+    }
+}
