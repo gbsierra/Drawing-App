@@ -2,7 +2,6 @@
     Stylesheet for menu.html
 */
 
-/* menu-styles.css */
 
 body {
     font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -12,21 +11,43 @@ body {
     color: #333;
 }
 
+/* Header */
 .header {
     background-color: #ffffff;
     color: #333;
-    padding: 20px;
+    padding: 10px;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
+h1 {
+    font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 50px;
+    color: #222222; /* Dark grey text color */
+    background: none; /* Remove background gradient */
+    letter-spacing: 2px; /* Reduce letter spacing */
+    text-transform: uppercase;
+    margin: 10px 0; /* Add some margin for spacing */
+    padding: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Softer text shadow */
+}
+h2 {
+    font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 24px;
+    color: #222222; /* Dark grey text color */
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 3px 0; 
+    padding: 10px;
+    border-bottom: 2px solid #3498db; /* Add a subtle blue border at the bottom */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Softer text shadow */
+}
 .header a {
     text-decoration: none;
     color: #007aff;
     font-size: 28px;
     font-weight: 700;
+    
 }
-
 .header ul {
     list-style: none;
     padding: 0;
@@ -34,43 +55,67 @@ body {
     display: flex;
     justify-content: center;
 }
-
 .header ul li {
     margin: 0 15px;
 }
-
 .header ul li a {
     text-decoration: none;
     color: #333;
-    transition: color 0.3s;
     font-weight: 500;
-}
 
-.header ul li a:hover {
+}
+.header ul li a span{
+    transition: color 0.3s, transform 0.3s;
+    display: inline-block;
+
+}
+.header ul li a:hover span {
     color: #007aff;
+    transform: scale(1.1) !important;
 }
 
+/* indexedDB Buttons */
+.indexedDB-buttons {
+    display: flex;
+    gap: 2px;
+    position: absolute;
+    left: 30px;
+    box-shadow: 0 7px 10px rgba(0, 0, 0, 0.2); /* Adds a subtle shadow */
+    top: 280px;
+}
+.indexedDB-buttons button {
+    border: none;
+    background-color: transparent;
+    color: #007bff;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 8px;
+    transition: color 0.3s, transform 0.3s;
+}
+.indexedDB-buttons button:hover {
+    color: #0056b3;
+    transform: scale(1.2);
+}
+
+/* Notes */
 .notes-container {
     padding: 40px 20px;
 }
-
 .notes-header {
     background-color: #ffffff;
-    padding: 30px;
+    padding: 18px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     text-align: center;
-    margin: 20px auto;
-    max-width: 800px;
+    margin: 15px auto;
+    max-width: 500px;
 }
-
 .notes-header h1 {
     margin: 0;
     color: #007aff;
     font-size: 36px;
     font-weight: 700;
 }
-
 .notes-header p {
     margin: 10px 0 0;
     color: #666;
@@ -78,59 +123,14 @@ body {
     font-weight: 400;
 }
 
-.note-box {
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-    margin: 20px auto;
-    padding: 30px;
-    border-radius: 12px;
-    max-width: 800px;
-    transition: box-shadow 0.3s ease;
-}
 
-.note-box:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-}
-
-.note-box h3 {
-    margin: 0;
-    font-size: 26px;
-    color: #007aff;
-}
-
-.note-box p {
-    color: #666;
-    line-height: 1.8;
-    font-size: 16px;
-}
-
-.note-box aside {
-    font-size: 14px;
-    color: #999;
-    text-align: right;
-    margin-top: 15px;
-}
-
-.footer {
-    background-color: #f8f8f8;
-    color: #333;
-    text-align: center;
-    padding: 20px;
-    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.footer p {
-    margin: 0;
-    font-size: 14px;
-}
-
+/* Regular View */
 .saved-notes-list {
     list-style-type: none;
     padding: 0;
     margin: 0;
 }
-
-.saved-notes-list li {
+.saved-notes-list .note-list-item {
     background-color: #f0f0f0;
     border: 1px solid #ccc;
     margin: 5px 0;
@@ -139,8 +139,98 @@ body {
     font-size: 16px;
     transition: background-color 0.3s;
 }
-
-.saved-notes-list li:hover {
+.saved-notes-list .note-list-item:hover {
     background-color: #dee9f3;
+}
+.saved-notes-list .note-list-item h3 {
+    font-family: 'Great Vibes', cursive;
+    margin: 0;
+    color: #007aff;
+    font-size: 28px;
+    font-weight: 300;
+}
+.saved-notes-list .note-list-item span {
+    margin: 0;
+    color: #666666;
+    font-size: 18px;
+    font-weight: 300;
+}
+/* Grid View */
+.grid-view {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+.grid-view .note-list-item {
+    height: 400px;
+    flex: 0 0 calc(33.33% - 30px); /* Prevent overriding the width */
+    white-space: nowrap;
+    display: flex;
+    padding-top: 5px;
+}
+.grid-view .note-list-item span {
+    position: relative;
+    margin: 0;
+    color: #666666;
+    font-size: 16px;
+    font-weight: 300;
+    top: 380px;
+    display: flex;
+    align-items: center;
+}
+/* List View */
+.list-view .note-list-item {
+    background-color: #fff;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.list-view .note-list-item:hover {
+    background-color: #dee9f3;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+.list-view .note-list-item img {
+    display: none; 
+}
+.list-view .note-list-item span {
+    color: #666666;
+    font-size: 16px;
+    font-weight: 300;
+}
+
+/* View Buttons */
+.view-buttons {
+    display: flex;
+    gap: 2px;
+    position: absolute;
+    right: 30px;
+    box-shadow: 0 7px 10px rgba(0, 0, 0, 0.2); /* Adds a subtle shadow */
+    top: 280px;
+}
+.view-buttons button {
+    border: none;
+    background-color: transparent;
+    color: #007bff;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 8px;
+    transition: color 0.3s, transform 0.3s;
+}
+.view-buttons button:hover {
+    color: #0056b3;
+    transform: scale(1.2);
+}
+
+/* Footer */
+.footer {
+    background-color: #f8f8f8;
+    color: #333;
+    text-align: center;
+    padding: 20px;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+.footer p {
+    margin: 0;
+    font-size: 14px;
 }
 

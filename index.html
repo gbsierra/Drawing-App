@@ -1,3 +1,4 @@
+
 <!--
     Current Notes Space
 
@@ -45,18 +46,24 @@
     <div class="toolbar">
         <button id="penButton" class="tool-button active"><i class="fas fa-pen"></i></button>
         <button id="highlighterButton" class="tool-button"><i class="fas fa-highlighter"></i></button>
+        <button id="eraserButton" class="tool-button"><i class="fas fa-eraser"></i></button>
+        <div class="colorPicker">
+            <input type="color" id="colorPicker">
+        </div>
         <button id="clearButton"><i class="fas fa-trash"></i></button>
-    </div>
-
-
-    <!-- Notebook lines button ( Add/Remove )  Needs to be fixed, clears lines and drawings. Should maybe make seperate contexts and canvas.  -->
-    <div class="lines-button">
-        <button id="toggleLinesButton"><i class="fas fa-book"></i></button>
     </div>
     
 
+
+    <!-- Notebook lines button ( Add/Remove )  Needs to be fixed, clears lines and drawings. Should maybe make seperate contexts and canvas.  
+    <div class="lines-button">
+        <button id="toggleLinesButton"><i class="fas fa-book"></i></button>
+    </div>
+    -->
+    
+
     <!-- Current To-Do List Section -->
-    <div class="to-doBar" id="notesFeature">
+    <div class="to-doPanel" id="notesFeature">
         <header>
             <button id="toggleToDoSection"><i class="fas fa-angle-down"></i></button>
             <h3>Current To-do:   <button type="button" id="clearToDoList" style="margin-left: 1px;">Clear</button></h3>
