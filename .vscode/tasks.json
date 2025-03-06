@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build",
+        "type": "shell",
+        "command": "g++",
+        "args": [
+          "-I${workspaceFolder}/tensorflow",
+          "-I${workspaceFolder}/tensorflow/tensorflow",
+          "-I${workspaceFolder}/tensorflow/tensorflow/lite/core",
+          "-I${workspaceFolder}/tensorflow/tensorflow/lite/kernels",
+          "-I${workspaceFolder}/tensorflow/tensorflow/compiler/mlir/lite",
+          "-L${workspaceFolder}/tensorflow/tensorflow/lite",
+          "-ltensorflowlite",
+          "model.cpp"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": ["$gcc"],
+        "detail": "Generated task by Microsoft C++ extension."
+      }
+    ]
+  }
+  

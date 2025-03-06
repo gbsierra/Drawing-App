@@ -1,9 +1,9 @@
 {
   "name": "app",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "npm-server.js",
   "scripts": {
-    "start": "node server.js" ,
+    "start": "node npm-server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -11,6 +11,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "form-data": "^4.0.2",
+    "formidable": "^3.5.2",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2"
   }
 }

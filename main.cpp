@@ -2,23 +2,17 @@
 My Note Taking App
 
 Main C++
-
 */
 
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <cpprest/http_listener.h>
-#include <cpprest/json.h>
 #include <sqlite3.h>
-using namespace web; //helps with creating and managing web-based applications
-using namespace web::http; //working with hhtp protocol
-using namespace web::http::experimental::listener; //necessary for handling incoming HTTP requests
 
 //--------------------
 // Functions
 //--------------------
-//database initialization
+// database initialization
 sqlite3* db;
 void initDatabase() {
     // connect to db
@@ -28,53 +22,38 @@ void initDatabase() {
     // execute SQL statement
     sqlite3_exec(db, createTableSQL, nullptr, nullptr, nullptr);
 }
-//saving to database
+
+void connectToDatabase(const std::string& dbName) {
+    sqlite3_open(dbName.c_str(), &db);
+}
+
+void executeSQL(const std::string& sql) {
+    sqlite3_exec(db, sql.c_str(), nullptr, nullptr, nullptr);
+}
+
+void disconnectFromDatabase() {
+    sqlite3_close(db);
+}
+
+// saving to database
 void saveDataToDatabase(const std::string& dataUrl) {
     // Connect to db
     connectToDatabase("notebook.db");
     // Prepare the SQL statement
     std::string insertSQL = "INSERT INTO Pages (ImageData) VALUES ('" + dataUrl + "');";
-    // Execute the SQL statement 
+    // Execute the SQL statement
     executeSQL(insertSQL);
     // Disconnect from the db
     disconnectFromDatabase();
 }
-//deleting from database
+
+// deleting from database
 void deleteDataFromDatabase() {
+    connectToDatabase("notebook.db");
     const char* deleteSQL = "DELETE FROM Pages;";
-    sqlite3_exec(db, deleteSQL, nullptr, nullptr, nullptr);
+    executeSQL(deleteSQL);
+    disconnectFromDatabase();
 }
-
-//processes incoming HTTP POST requests
-void handle_post(http_request request) {
-    // Decode the request URI to get the path
-    std::string path = uri::decode(request.relative_uri().path());
-
-    // Check if the path is "/save"
-    if (path == "/save") {
-        // Extract the JSON body from the request synchronously
-        auto json = request.extract_json().get();
-        // Get the dataUrl from the JSON
-        std::string dataUrl = json[U("dataUrl")].as_string();
-        // Save the dataUrl to the database
-        saveDataToDatabase(dataUrl);
-        // Reply to the client with a status code of 200 OK and a "Saved" message
-        request.reply(status_codes::OK, "Saved");
-    } 
-    // Check if the path is "/delete"
-    else if (path == "/delete") {
-        // Delete data from the database
-        deleteDataFromDatabase();
-        // Reply to the client with a status code of 200 OK and a "Deleted" message
-        request.reply(status_codes::OK, "Deleted");
-    } 
-    // If the path is neither "/save" nor "/delete"
-    else {
-        // Reply to the client with a status code of 404 Not Found and a "Not Found" message
-        request.reply(status_codes::NotFound, "Not Found");
-    }
-}
-
 
 //--------------------
 // Main Function
@@ -82,22 +61,40 @@ void handle_post(http_request request) {
 int main() {
     // Initialize db
     initDatabase();
-    
-    // Set up the HTTP listener
-    http_listener listener(U("http://localhost:3001"));
-    
-    // Support POST requests using the handle_post function
-    listener.support(methods::POST, handle_post);
 
-    // Try to open the listener and start listening
-    try {
-        listener.open().then([]() {
-            std::cout << "Starting to listen" << std::endl;
-        }).wait();
-        // Keeps program running
-        std::cin.get();
-    } catch (const std::exception& e) {
-        std::cout << "Exception: " << e.what() << std::endl;
+    int choice;
+    std::string dataUrl;
+
+    while (true) {
+        std::cout << "Menu:\n";
+        std::cout << "1. Save Data\n";
+        std::cout << "2. Delete Data\n";
+        std::cout << "3. Exit\n";
+        std::cout << "Enter your choice: ";
+        std::cin >> choice;
+
+        switch (choice) {
+            case 1:
+                std::cout << "Enter data URL to save: ";
+                std::cin >> dataUrl;
+                saveDataToDatabase(dataUrl);
+                std::cout << "Data saved successfully.\n";
+                break;
+
+            case 2:
+                deleteDataFromDatabase();
+                std::cout << "Data deleted successfully.\n";
+                break;
+
+            case 3:
+                // Close db and exit
+                sqlite3_close(db);
+                return 0;
+
+            default:
+                std::cout << "Invalid choice. Please try again.\n";
+                break;
+        }
     }
 
     // Close db
@@ -105,4 +102,3 @@ int main() {
 
     return 0;
 }
-
