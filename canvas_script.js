@@ -7,9 +7,7 @@
 
 */
 
-//------------------------------------------------------------
-//                         SETUP
-//------------------------------------------------------------
+//-------------------------------------------    SETUP     -------------------------------------------
 // Get DOM (Document Object Model) elements
 const canvas = document.getElementById('drawingCanvas'); // Visible canvas for drawing
 const context = canvas.getContext('2d'); // 2D rendering context
@@ -25,6 +23,9 @@ let toolWidth = 2; // current tool width
 let lastX, lastY; // Last coordinates for continuous lines
 let isSelecting = false;
 let isPointerDown = false;
+let isTyping = false;
+let selectedRect; // selecting Rect
+let startX, startY, currentX, currentY; //vars for rect
 
 // resize screen on load.
 resizeAndHandle();
@@ -33,10 +34,8 @@ canvas.style.touchAction = 'none';
 
 
 
-//----------------------------------------------------------------------
-//                       DRAWING FUNCTIONS
-//----------------------------------------------------------------------
-// Function to handle the right mouse click
+//---------------------------------------    DRAWING FUNCTIONS    ---------------------------------------
+// handle the right mouse click
 function handleRightClick(event) {
     console.log('Right mouse button clicked!', event);
     if(currentTool !== 'eraser'){
@@ -44,34 +43,32 @@ function handleRightClick(event) {
     }
     currentTool = 'eraser'; // Change the tool to eraser on right click
 }
-// Function to handle the right mouse release
+// handle the right mouse release
 function handleRightClickRelease(event) {
     console.log('Right mouse button released!', event);
     if (currentTool === 'eraser') {
         currentTool=lastTool;
     }
 }
-// Define necessary variables
-let selectedRect;
-let startX, startY, currentX, currentY;
-
+// handle pointer down
 function handlePointerDown(event) {
     isPointerDown = true;
     startX = event.offsetX;
     startY = event.offsetY;
-    console.log('pointerdown:', { startX, startY });
 
     if (currentTool === 'selector') {
+        console.log('pointerdown:', { startX, startY });
         selectedRect = {
             width: currentX - startX,
             height: currentY - startY,
             x: startX,
             y: startY
         };
-        console.log('Selector tool activated');
         drawing = false; // Disable drawing for the selector tool
         isSelecting = true;
+        return; // Exit the function early for the selector tool
     }
+
     if (event.pointerType === 'pen' || event.pointerType === 'mouse' || event.pointerType === 'eraser') {
         drawing = true;
         const rect = canvas.getBoundingClientRect();
@@ -80,16 +77,11 @@ function handlePointerDown(event) {
         lastX = (event.clientX - rect.left) * scaleX;
         lastY = (event.clientY - rect.top + notebookContainer.scrollTop) * scaleY;
 
-        if (currentTool === 'selector') {
-            drawing = false; // Disable drawing for the selector tool
-            isSelecting = true;
-        }
-        else if (event.buttons === 2) {
+        if (event.buttons === 2) {
             erasing = true;
             currentTool = 'eraser'; // Change the tool to eraser on right click
             context.globalCompositeOperation = 'destination-out';
-        }
-        else {
+        } else {
             erasing = false;
             currentTool = lastTool;
             context.globalCompositeOperation = 'source-over';
@@ -102,7 +94,7 @@ function handlePointerDown(event) {
         notebookContainer.style.touchAction = 'none';
     }
 }
-
+// handle pointer up
 function handlePointerUp(event) {
     if(!isPointerDown){
         return;
@@ -110,16 +102,18 @@ function handlePointerUp(event) {
     isPointerDown = false;
 
     if (currentTool === 'selector') {
-        const x1 = selectedRect.x;
-        const y1 = selectedRect.y;
-        const x2 = selectedRect.x + selectedRect.width;
-        const y2 = selectedRect.y + selectedRect.height;
+        const startX = selectedRect.x;
+        const startY = selectedRect.y;
+        const endX = selectedRect.x + selectedRect.width;
+        const endY = selectedRect.y + selectedRect.height;
 
 
-        console.log('pointerup:', { x2, y2 });
+        console.log('pointerup:', { endX, endY });
 
         // Send dimensions to backend
-        sendSelectedAreaToBackend(x1, y1, x2, y2);
+        sendSelectedAreaToBackend(startX, startY, endX, endY);
+        currentTool=lastTool;
+
     }
     if (event.pointerType === 'pen' || event.pointerType === 'mouse' || event.pointerType === 'eraser') {
         drawing = false;
@@ -136,144 +130,45 @@ function handlePointerUp(event) {
     }
     isSelecting = false;
 }
-// Continue drawing as pointer moves
+// handle pointer moving
 function handlePointerMove(event) {
-    if (drawing && (event.pointerType === 'pen' || event.pointerType === 'mouse' || event.pointerType === 'eraser')) {
-        event.preventDefault();
+    if (isPointerDown && !isTyping) {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        
+
         // Update the global currentX and currentY variables
         currentX = (event.clientX - rect.left) * scaleX;
         currentY = (event.clientY - rect.top + notebookContainer.scrollTop) * scaleY;
 
-        const pressure = event.pressure * 1.6 || 1; // Stylus pressure (default 1 if unsupported)
-        context.lineWidth = toolWidth * 1.2 * pressure; // Dynamic width based on pressure
+        if (isSelecting && currentTool === 'selector') {
+            selectedRect.width = Math.abs(currentX - startX);
+            selectedRect.height = Math.abs(currentY - startY);
+            selectedRect.x = Math.min(startX, currentX);
+            selectedRect.y = Math.min(startY, currentY);
+        } else if (drawing && (event.pointerType === 'pen' || event.pointerType === 'mouse' || event.pointerType === 'eraser')) {
+            event.preventDefault();
+            const pressure = event.pressure * 1.6 || 1; // Stylus pressure (default 1 if unsupported)
+            context.lineWidth = toolWidth * 1.2 * pressure; // Dynamic width based on pressure
 
-        if (currentTool === 'eraser') {
-            context.globalCompositeOperation = 'destination-out'; // Erase instead of draw
-        } else {
-            context.globalCompositeOperation = 'source-over'; // Draw normally
+            if (currentTool === 'eraser') {
+                context.globalCompositeOperation = 'destination-out'; // Erase instead of draw
+            } else {
+                context.globalCompositeOperation = 'source-over'; // Draw normally
+            }
+
+            context.lineTo(currentX, currentY);
+            context.stroke();
+            context.beginPath();
+            context.moveTo(currentX, currentY); // Start new segment
+
+            lastX = currentX;
+            lastY = currentY;
         }
-
-        context.lineTo(currentX, currentY);
-        context.stroke();
-        context.beginPath();
-        context.moveTo(currentX, currentY); // Start new segment
-
-        lastX = currentX;
-        lastY = currentY;
     }
 }
 
-
-function canvasHasContent() {
-    const emptyCanvas = document.createElement('canvas');
-    emptyCanvas.width = canvas.width;
-    emptyCanvas.height = canvas.height;
-    
-    return canvas.toDataURL() !== emptyCanvas.toDataURL();
-}
-
-
-
-// MATH BUTTON STUFF
-// Add an event listener for switching tools
-document.addEventListener('keydown', (event) => {
-    if (event.key === 's') {
-        currentTool = 'selector';
-        handleSelectorTool();
-    }
-});
-
-function getUserSelection() {
-    currentTool = 'selector';
-
-}
-async function sendSelectedAreaToBackend(x1, y1, x2, y2) {
-    if (!canvas || !context) {
-        console.error('Canvas or context is not available.');
-        return;
-    }
-
-    // Create a temporary canvas to extract the selected area
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = x2 - x1;
-    tempCanvas.height = y2 - y1;
-    const tempContext = tempCanvas.getContext('2d');
-    tempContext.drawImage(canvas, x1, y1, x2 - x1, y2 - y1, 0, 0, x2 - x1, y2 - y1);
-
-    try {
-        // Convert canvas to Blob (PNG format)
-        const blob = await new Promise((resolve) => tempCanvas.toBlob(resolve, 'image/png'));
-        if (!blob || blob.size === 0) {
-            console.error('Failed to create image blob or blob is empty.');
-            return;
-        }
-        console.log(`Blob size: ${blob.size}`); // Log the size of the blob
-
-        // Create FormData and append the blob
-        const formData = new FormData();
-        formData.append('image', blob, 'selected_area.png');
-
-        // Log FormData entries
-        for (let pair of formData.entries()) {
-            console.log(`${pair[0]}: ${pair[1]}`);
-        }
-
-        // Convert blob to Base64 string
-        const base64String = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-
-        // Display the image in a small popup window
-        const imgWindow = window.open('', '_blank', 'width=400,height=400');
-        imgWindow.document.write(`<img src="${base64String}" alt="Selected Area"/>`);
-
-        // Send the image to the backend using Fetch API
-        const response = await fetch('http://127.0.0.1:2999/process_drawing', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Backend response error: ${response.statusText} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('Server response:', data);
-    } catch (error) {
-        console.error('Error processing request:', error);
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//----------------------------------------------------------------------
-//                        CANVAS FUNCTIONS
-//----------------------------------------------------------------------
+//---------------------------------------     CANVAS FUNCTIONS     ---------------------------------------
 // sets current tool
 function setTool(tool) {
     console.log(`'${tool}' tool selected.`);
@@ -283,6 +178,49 @@ function setTool(tool) {
     toolWidth = tool === 'pen' ? 2 : 16.5; 
     document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active')); 
     document.getElementById(`${tool}Button`).classList.add('active'); 
+}
+//handling textbox creation
+function handleTextboxCreation() {
+    isTyping = true; // Assuming this is a global flag you’re using
+    const textButton = document.getElementById('textButton');
+    
+    // Show prompt, toggle button active state
+    textButton.classList.add('active'); // Visual feedback (e.g., color change)
+    const textValue = prompt('Enter text to place on the screen:');
+    
+    // If no input or canceled, reset and exit
+    if (!textValue) {
+        textButton.classList.remove('active');
+        return;
+    }
+
+    // Change cursor to indicate placement mode
+    document.body.style.cursor = 'crosshair';
+
+    // Place text on next click
+    function placeTextbox(event) {
+        event.stopPropagation();
+        
+        // Get canvas-relative coordinates
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        // Draw text on the canvas
+        context.font = '16px Arial'; // Set font (customize as needed)
+        context.fillStyle = 'black'; // Set text color (customize as needed)
+        context.fillText(textValue, x, y);
+
+        // Reset button state and cursor
+        textButton.classList.remove('active');
+        document.body.style.cursor = 'default';
+        isTyping = false;
+    }
+
+    // Delay to avoid button click interference
+    setTimeout(() => {
+        canvas.addEventListener('click', placeTextbox, { once: true });
+    }, 10);
 }
 // clears current canvas
 function clearCanvas() {
@@ -306,11 +244,22 @@ function resizeAndHandle() {
     canvas.style.width = `${containerWidth}px`;
     canvas.style.height = `${containerHeight}px`;
 }
+// check for empty canvas
+function canvasHasContent(canvas) {
+    const context = canvas.getContext('2d');
+    const pixelData = context.getImageData(0, 0, canvas.width, canvas.height).data;
+
+    for (let i = 0; i < pixelData.length; i++) {
+        if (pixelData[i] !== 0) {
+            return true;
+        }
+    }
+    return false;
+}
 
 
-//----------------------------------------------------------------------
-//                   SAVE/LOAD CANVAS FUNCTIONS
-//----------------------------------------------------------------------
+
+//---------------------------------     SAVE/LOAD FUNCTIONS (session and local storage)    ---------------------------------
 // Save/Load canvas to session storage (handles orientation and resizing)
 function savePageToSession() {
     try {
@@ -357,27 +306,32 @@ function loadPageFromSession() {
 }
 // Save canvas to local storage
 function savePageLocally() {
-    try {
-        // Save the note details to local storage
-        const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
-        const noteTitle = prompt('   Enter the note title:');
-        
-        // Assuming you have a way to get the canvas image data
-        const image = canvas.toDataURL(); // Get the canvas image data
+    if(canvasHasContent(canvas)){    
+        try {
+            // Save the note details to local storage
+            const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
+            const noteTitle = prompt('   Enter the note title:');
+            
+            // Assuming you have a way to get the canvas image data
+            const image = canvas.toDataURL(); // Get the canvas image data
 
-        const note = {
-            title: noteTitle,
-            lastModified: new Date().toLocaleString(),
-            image: image // Add the image data to the note
-        };
-        notes.push(note);
-        localStorage.setItem('user-saved-notes', JSON.stringify(notes));
+            const note = {
+                title: noteTitle,
+                lastModified: new Date().toLocaleString(),
+                image: image // Add the image data to the note
+            };
+            notes.push(note);
+            localStorage.setItem('user-saved-notes', JSON.stringify(notes));
 
-        alert(`Note '${note.title}' saved locally.`);
-        console.log(`Note '${note.title}' saved locally.`);
-    } catch (error) {
-        console.error('Error saving note:', error);
-        alert('Failed to save note.');
+            alert(`Note '${note.title}' saved locally.`);
+            console.log(`Note '${note.title}' saved locally.`);
+        } catch (error) {
+            console.error('Error saving note:', error);
+            alert('Failed to save note.');
+        }
+    }
+    else{
+        alert(`Canvas empty. Get to work!`);
     }
 }
 // check flag upon loading page, calls loadPageLocally
@@ -462,17 +416,121 @@ function getLoadSelection() {
     }
 }    
 
+//---------------------------------------     PREDICTION BUTTON     ---------------------------------------
+// keydown 's' shortcut
+/*document.addEventListener('keydown', (event) => {
+    if (event.key === 's') {
+        currentTool = 'selector';
+        console.log('Selector tool activated');
+    }
+}); */
+function predictionButtonSelect() {
+    currentTool = 'selector';
+    document.body.style.cursor = 'crosshair';
+    console.log('Selector tool activated');
+
+}
+async function sendSelectedAreaToBackend(x1, y1, x2, y2) {
+    document.body.style.cursor = 'wait';
+    // Get the canvas element by its ID
+    const canvas = document.getElementById('drawingCanvas');
+    if (!canvas) {
+        console.error('Canvas element not found.');
+        return;
+    }
+
+    // Get the 2D context of the canvas
+    const context = canvas.getContext('2d');
+    if (!context) {
+        console.error('Failed to get 2D context.');
+        return;
+    }
+
+    // Calculate the width and height of the selected area
+    const width = x2 - x1;
+    const height = y2 - y1;
+
+    // Validate the selected area dimensions
+    if (width <= 0 || height <= 0) {
+        console.error('Invalid selection area. Please select a valid area:', x1, y1, x2, y2);
+        return;
+    }
+
+    // Create a temporary canvas to copy the selected area
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const tempContext = tempCanvas.getContext('2d');
+    
+    // Set the background color of the temporary canvas to white
+    tempContext.fillStyle = 'white';
+    tempContext.fillRect(0, 0, width, height);
+
+    // Copy the selected area from the original canvas to the temporary canvas
+    tempContext.drawImage(canvas, x1, y1, width, height, 0, 0, width, height);
+
+    try {
+        // Convert the temporary canvas to a blob
+        const blob = await new Promise((resolve, reject) => {
+            tempCanvas.toBlob(blob => {
+                if (blob) resolve(blob);
+                else reject(new Error('Failed to create blob.'));
+            }, 'image/png');
+        });
+
+        // Validate the blob
+        if (!blob || blob.size === 0) {
+            console.error('Failed to create image blob or blob is empty.');
+            return;
+        }
+
+        console.log(`Blob created successfully. Size: ${blob.size} bytes`);
+
+        // Create a File object from the blob
+        const file = new File([blob], 'selected_area.png', { type: 'image/png' });
+
+        // Create a FormData object and append the File object to it
+        const formData = new FormData();
+        formData.append('image', file);
+
+        // Send the FormData object to the backend server
+        const response = await fetch('http://127.0.0.1:2999/process_drawing', {
+            method: 'POST',
+            body: formData,
+        });
+
+        // Handle the backend response
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Backend response error: ${response.statusText} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log('Server response:', data);
+        document.body.style.cursor = 'default';
+        // Open a new window to display the received image and results
+        const imgWindow = window.open('', '_blank', `width=${width},height=${height + 100}`);
+        if (imgWindow && imgWindow.document) {
+            imgWindow.document.write(`
+                <h3>Received Image and Results</h3>
+                <img src="data:image/png;base64,${data.image_base64}" alt="Received Image" style="max-width:100%;"/>
+                <p>Processed Text: ${data.text_processed}</p>
+                <p>Raw Text: ${data.text_raw}</p>
+            `);
+        } else {
+            console.warn('Popup blocked or failed, check console for results');
+            console.log('Image Base64:', data.image_base64.substring(0, 50) + '...');
+            console.log('Processed Text:', data.text_processed);
+            console.log('Raw Text:', data.text_raw);
+        }
+    } catch (error) {
+        console.error('Error processing request:', error);
+    }
+}
 
 
 
-
-
-
-
-
-//  -- Event listeners --
-//-------------------------------
-
+//--------------------------------------------     EVENT LISTENERS     --------------------------------------------
 window.addEventListener('orientationchange', loadPageFromSession); //handle orientationchange
 window.addEventListener('resize', loadPageFromSession); //handle webpage resizing
 
@@ -495,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => { // double tap
 
         // Function to apply zoom
         function applyZoom(scale, x, y) {
-            [canvas, linesCanvas].forEach(el => {
+            [canvas, linesCanvas, ].forEach(el => {
                 if (el) {  // Check if element exists
                     el.style.transition = "transform 0.3s ease"; // Smooth transition
                     if (scale !== 1) {
@@ -542,6 +600,7 @@ document.addEventListener('DOMContentLoaded', () => { // double tap
 document.getElementById('penButton').addEventListener('click', () => setTool('pen'));
 document.getElementById('highlighterButton').addEventListener('click', () => setTool('highlighter'));
 document.getElementById('eraserButton').addEventListener('click', () => setTool('eraser'));
+document.getElementById('textButton').addEventListener('click', handleTextboxCreation);
 document.addEventListener("DOMContentLoaded", function () {  //color picker
     const colorPicker = document.getElementById('colorPicker');
     if (colorPicker) {
@@ -560,7 +619,7 @@ document.getElementById('clearButton').addEventListener('click', function() { //
 document.getElementById('saveButton').addEventListener('click', savePageLocally);
 document.getElementById('loadButton').addEventListener('click', getLoadSelection);
 
-document.getElementById('mathButton').addEventListener('click', getUserSelection);
+document.getElementById('predictionButton').addEventListener('click', predictionButtonSelect);
 
 
 document.addEventListener('DOMContentLoaded', () => {   // TO-DO LIST notes

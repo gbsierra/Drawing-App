@@ -1,7 +1,7 @@
 /*
 My Note Taking App
 
-Main C++
+Main C++ (working with indexed DB)
 */
 
 #include <iostream>
@@ -9,9 +9,7 @@ Main C++
 #include <string>
 #include <sqlite3.h>
 
-//--------------------
-// Functions
-//--------------------
+//---------------------------------------    INDEXED DB FUNCTIONS    ---------------------------------------
 // database initialization
 sqlite3* db;
 void initDatabase() {
@@ -55,9 +53,7 @@ void deleteDataFromDatabase() {
     disconnectFromDatabase();
 }
 
-//--------------------
-// Main Function
-//--------------------
+//---------------------------------------     MAIN FUNCTION    ---------------------------------------
 int main() {
     // Initialize db
     initDatabase();

@@ -10,6 +10,7 @@
 */
 
 /* -- main -- */
+
 html, body {
     margin: 0;
     padding: 0;
@@ -34,6 +35,39 @@ canvas {
     justify-content: center;
     align-items: center;
 }
+/* -- NOTEBOOK -- */
+.notebook-container {
+    width: 100%;
+    height: 100vh;
+    border: 1px solid #ac9898;
+    position: relative;
+    z-index: 5;
+}
+
+#drawingCanvas {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+}
+
+.textbox {
+    position: absolute;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0); /* Fully transparent */
+    cursor: pointer;  /* Indicating it can be clicked */
+    min-width: 100px;
+    min-height: 20px;
+    z-index: 6;
+}
+.active {
+    background-color: #ddd;
+}
+#textInput {
+    margin: 10px;
+}
+
 
 /* -- EXIT index.html BUTTON -- */
 .exit-button {
@@ -46,7 +80,7 @@ canvas {
 }
 .exit-button button {
     padding: 10px;
-    background-color: #be0d16ea;
+    background-color: #da2a33ea;
     border: none;
     border-radius: 18px; /* Rounded buttons with more consistent curvature */
     color: #ffffff;
@@ -59,7 +93,9 @@ canvas {
     z-index: 100;
 }
 .exit-button button:hover {
-    background-color: #f13030;
+    transition: background-color 1s ease, transform 0.4s ease;
+    transform: scale(1.25);
+    background-color: #d11616;
 }
 
 
@@ -67,7 +103,7 @@ canvas {
 .save-buttons {
     position: fixed;
     top: 20px;
-    right: 260px;
+    right: 290px;
     display: flex;
     gap: 10px; /* Increased gap for better spacing */
     z-index: 100;
@@ -87,22 +123,24 @@ canvas {
     z-index: 100;
 }
 .save-buttons button:hover {
+    transition: all 0.2s ease;
+    transform: scale(1.08);
     background-color: #0056b3;
 }
 
 
 
-/* -- MATH BUTTON -- */
-.math-button {
+/* -- PREDICTION BUTTON -- */
+.prediction-button {
     position: fixed;
     bottom: 20px;
-    right: 260px;
+    right: 25px;
     display: flex;
     gap: 10px; /* Increased gap for better spacing */
     z-index: 100;
 }
-.math-button button {
-    padding: 9px;
+.prediction-button button {
+    padding: 12px;
     background-color: #007bff;
     border: none;
     border-radius: 12px; /* Rounded buttons with more consistent curvature */
@@ -115,7 +153,9 @@ canvas {
     align-items: center;
     z-index: 100;
 }
-.math-button button:hover {
+.prediction-button button:hover {
+    transition: all 0.4s ease;
+    transform: scale(1.25);
     background-color: #0056b3;
 }
 
@@ -129,6 +169,11 @@ canvas {
     justify-content: center;
     margin: 2px;
 }
+.colorPicker:hover {
+    transition: all 0.4s ease;
+    transform: scale(1.07);
+}
+
 .colorPicker input[type="color"] {
     width: 37px;
     height: 37px;
@@ -166,8 +211,9 @@ canvas {
     color: #00bfa5;
 }
 .tool-button:hover, .toolbar button:hover {
-    transition: color 0.5s ease;
-    color: #c0472b;
+    transition: color 0.5s ease, transform 0.4s ease;
+    color: #964c10;
+    transform: scale(1.2);
 }
 
 
@@ -227,6 +273,8 @@ button#toggleToDoSection i {
     transition: background-color 0.3s ease;
 }
 .to-doPanel button:hover {
+    transition: transform 0.3s ease;
+    transform: scale(1.1);
     background-color: #0056b3;
 }
 /* list */
@@ -246,6 +294,9 @@ button#toggleToDoSection i {
     margin-bottom: 5px;
 }
 .to-doPanel ul li:hover {
+    border-radius: 10px;
+    transition: transform 0.4s ease;
+    transform: scale(1.02);
     background-color: #565656; /* Slightly darker background on hover */
 }
 .to-doPanel ul li:active {
@@ -254,24 +305,6 @@ button#toggleToDoSection i {
 .to-doPanel ul li:last-child {
     border-bottom: none; /* Removes border from the last item */
     margin-bottom: 11.5px;
-}
-
-
-/* -- NOTEBOOK -- */
-.notebook-container {
-    width: 100%;
-    height: 100vh;
-    border: 1px solid #ac9898;
-    position: relative;
-    z-index: 5;
-}
-
-#drawingCanvas {
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 5;
 }
 
 

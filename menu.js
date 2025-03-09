@@ -1,5 +1,3 @@
-
-
 /*
 
 My Note Taking App
@@ -9,9 +7,7 @@ Menu Script
 */
 
 
-//---------------
-// Functions
-//---------------
+//------------------------------------------    MENU FUNCTIONS    ------------------------------------------
 //displayListType()
 function displayListType(view) {
   const notesList = document.getElementById('notesListType');
@@ -73,7 +69,6 @@ function displayNotes() {
     notesList.appendChild(listItem);
   });
 }
-
 // Function to open the note detail
 function openNoteDetail(index) {
   const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
@@ -81,9 +76,7 @@ function openNoteDetail(index) {
   alert(`   Opening note: ${note.title}\n`);
 }
 
-//---------------
-// IndexedDB
-//---------------
+//---------------------------------------    INDEXED DB FUNCTIONS    ---------------------------------------
 //setup
 const request = indexedDB.open("NotesDatabase", 1);
 request.onupgradeneeded = function(event) {
@@ -186,7 +179,7 @@ function getNotesFromIndexedDB() {
 
 
 
-// -- Event Listeners -- 
+//--------------------------------------------     EVENT LISTENERS     --------------------------------------------
 document.getElementById("saveButton").addEventListener("click", saveToIndexedDB);
 document.getElementById("retrieveButton").addEventListener("click", getNotesFromIndexedDB);
 document.getElementById("saveButton").addEventListener("click", saveToIndexedDB);

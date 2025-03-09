@@ -1,0 +1,7 @@
+Flask
+flask-cors
+pillow
+transformers
+torch
+datasets
+transformers[torch]
