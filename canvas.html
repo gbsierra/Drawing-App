@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="canvas_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- from https://cdnjs.com/libraries/font-awesome?form=MG0AV3 -->
     <script src="canvas_script.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script> <!-- from https://cdnjs.com/libraries/pdf.js?form=MG0AV3 -->
 </head>
 
 <body>
@@ -29,11 +30,16 @@
     </div>
 
 
-
+    <!-- Undo/Redo Buttons -->
+     <nav class ="undo-buttons">
+        <button id="undoButton"><i class="fas fa-undo"></i></button>
+        <button id="redoButton"><i class="fas fa-redo"></i></button>
+    </nav>
     <!-- Save and Load Buttons ( To save drawings )-->
     <nav class="save-buttons">
         <button id="saveButton"><i class="fas fa-save"></i></button>
         <button id="loadButton"><i class="fas fa-folder-open"></i></button>
+        <input type="file" id="fileInput" style="display:none" onchange="loadFromPCFile(event)">
     </nav>
 
     <!-- Get Prediction From Drawing -->

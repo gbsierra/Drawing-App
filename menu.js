@@ -18,44 +18,74 @@ function displayListType(view) {
   // Add the selected view class
   notesList.classList.add(`${view}-view`);
 }
-//displayNotes()
 function displayNotes() {
-
   // Retrieve notes from localStorage, parse as JSON
   const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
   console.log('Notes loaded from local storage:', notes);
-  // Select container to displaying notes
+
+  // Select container to display notes
   const notesList = document.querySelector('.saved-notes-list');
+  
   // Clear existing notes
   notesList.innerHTML = ''; 
 
   // For every note,
   notes.forEach((note, index) => {
     console.log('Processing note:', note);
+
     // Create a list item
     const listItem = document.createElement('li');
     listItem.classList.add('note-list-item');
-    // Create a clickable link
-    const noteLink = document.createElement('a');
-    noteLink.href = `../`;
-    // When clicked,
-    noteLink.addEventListener('click', (event) => {
-      //event.preventDefault();
-      localStorage.setItem('loadingPageFlag', 'true');
-      localStorage.setItem('noteIndex', index);
-      openNoteDetail(index);
-    });
 
     // Create a div to hold the note content
     const noteContent = document.createElement('div');
+    noteContent.classList.add('note-content'); // Add a class for styling
     noteContent.innerHTML = `
       <h3>${note.title}</h3>
       <p>${note.content ? note.content.substring(0, 100) + "..." : ""}</p>
       ${note.image ? `<img src="${note.image}" alt="${note.title} Image" style="max-width: 100%; border-radius: 8px;">` : ''}
     `;
 
+    // Create the "X" button to delete the note
+    const deleteButton = document.createElement('button');
+    deleteButton.classList.add('delete-button'); // Add a class for styling
+    deleteButton.textContent = 'X';
+    
+    // Position the "X" button in the top-right corner
+    deleteButton.style.position = 'absolute';
+    deleteButton.style.top = '10px';
+    deleteButton.style.right = '10px';
+    
+    // Event listener for deleting the note
+    deleteButton.addEventListener('click', (event) => {
+      event.stopPropagation(); // Prevent the note link click event from triggering
+      event.preventDefault(); // Prevent the link from being followed when clicking on "X" button
+
+      // Remove the note from the array
+      notes.splice(index, 1); 
+      
+      // Update localStorage
+      localStorage.setItem('user-saved-notes', JSON.stringify(notes));
+      
+      // Re-render the notes
+      displayNotes();
+    });
+
+    // Append the "X" button to the note content
+    noteContent.appendChild(deleteButton);
+
+    // Create a link element for the note title, which is separate from the delete button
+    const noteLink = document.createElement('a');
+    noteLink.href = '../'; // Link to go back or to the next page
+    noteLink.addEventListener('click', (event) => {
+      // Save the note index to localStorage before navigating
+      localStorage.setItem('loadingPageFlag', 'true');
+      localStorage.setItem('noteIndex', index);
+    });
+
     // Append the note content to the link
     noteLink.appendChild(noteContent);
+
     // Append the link to the list item
     listItem.appendChild(noteLink);
 
@@ -69,6 +99,8 @@ function displayNotes() {
     notesList.appendChild(listItem);
   });
 }
+
+
 // Function to open the note detail
 function openNoteDetail(index) {
   const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
@@ -94,7 +126,7 @@ request.onerror = function(event) {
 }
 request.onsuccess = function(event) {
   const db = event.target.result;
-  console.log("Database opened successfully");
+  console.log("Indexed Database opened successfully");
 }
 // Save/Load to database
 function saveToIndexedDB() {

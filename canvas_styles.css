@@ -24,31 +24,42 @@ canvas {
     display: block;
     transition: transform 0.3s ease;
 }
+/* Lines Canvas (behind the drawing canvas) */
 #linesCanvas {
+    position: absolute;
+    display: block;        /* Ensure it's block level for background */
+    width: 100%;           /* 100% width to fill the container */
+    height: 100%;          /* 100% height to fill the container */
     background-image: linear-gradient(to bottom, #DDD 1px, transparent 1px);
-    background-size: 100% 20px; /* Adjust the size to your preference */
+    background-size: 100% 20px; /* Line size */
+    pointer-events: none;   /* Ignore pointer events */;
+    z-index: 1;            /* Lower z-index to be behind drawingCanvas */
 }
 #notebookContainer {
     width: 100%;
-    height: 100%;
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
 }
+
 /* -- NOTEBOOK -- */
 .notebook-container {
     width: 100%;
-    height: 100vh;
-    border: 1px solid #ac9898;
+    height: 100%;
+    border: 1px solid #a12a2a;
+    display: flex;         /* Center the canvas with flexbox */
+    justify-content: center;
+    align-items: center;
     position: relative;
     z-index: 5;
 }
 
 #drawingCanvas {
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
+    display: block;        /* Ensure the canvas is block-level */
+    width: auto;           /* Allow the width to adjust based on content */
+    height: auto;          /* Allow the height to adjust based on content */
     z-index: 5;
 }
 
@@ -72,7 +83,7 @@ canvas {
 /* -- EXIT index.html BUTTON -- */
 .exit-button {
     position: fixed;
-    top: 20px;
+    top: 22px;
     left: 20px;
     display: flex;
     gap: 10px; /* Increased gap for better spacing */
@@ -99,11 +110,42 @@ canvas {
 }
 
 
-/* -- SAVE/LOAD PAGE BUTTONS -- */
-.save-buttons {
+/* -- UNDO/REDO PAGE BUTTONS -- */
+.undo-buttons {
     position: fixed;
     top: 20px;
     right: 290px;
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+}
+
+.undo-buttons button {
+    padding: 9px;
+    background-color: #007bffae;
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.undo-buttons button:hover {
+    transform: scale(1.08);
+    background-color: #0056b3;
+}
+
+
+/* -- SAVE/LOAD PAGE BUTTONS -- */
+.save-buttons {
+    position: fixed;
+    top: 23px;
+    left: 80px;
     display: flex;
     gap: 10px; /* Increased gap for better spacing */
     z-index: 100;

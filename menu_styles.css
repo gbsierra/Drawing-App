@@ -123,6 +123,28 @@ h2 {
     font-weight: 400;
 }
 
+.delete-button {
+    background-color: #d3d3d3; /* Light grey background */
+    color: #333; /* Dark grey text for contrast */
+    border: none;
+    font-size: 16px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transition for background and scaling */
+}
+
+.delete-button:hover {
+    background-color: #a9a9a9; /* Slightly darker grey on hover */
+    transform: scale(1.1); /* Slight scale-up effect on hover for a more interactive feel */
+}
+
+.delete-button:active {
+    background-color: #808080; /* Even darker grey on click (active state) */
+}
+
+
 
 /* Regular View */
 .saved-notes-list {
@@ -130,6 +152,7 @@ h2 {
     padding: 0;
     margin: 0;
 }
+
 .saved-notes-list .note-list-item {
     background-color: #f0f0f0;
     border: 1px solid #ccc;
@@ -137,11 +160,19 @@ h2 {
     padding: 10px;
     font-family: Arial, sans-serif;
     font-size: 16px;
+    position: relative; /* Allow positioning of the delete button */
     transition: background-color 0.3s;
+    max-height: 118vh; /* Limit max height to 90% of the viewport height */
+    overflow: hidden; /* Clip overflow content */
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    justify-content: space-between; /* Space out content evenly */
 }
+
 .saved-notes-list .note-list-item:hover {
     background-color: #dee9f3;
 }
+
 .saved-notes-list .note-list-item h3 {
     font-family: 'Great Vibes', cursive;
     margin: 0;
@@ -149,12 +180,40 @@ h2 {
     font-size: 28px;
     font-weight: 300;
 }
+
 .saved-notes-list .note-list-item span {
     margin: 0;
     color: #666666;
     font-size: 18px;
     font-weight: 300;
 }
+
+.saved-notes-list .delete-button {
+    background-color: #d3d3d3; /* Light grey background */
+    color: #333; /* Dark grey text for contrast */
+    border: none;
+    font-size: 16px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    position: absolute; /* Position the button inside the note */
+    top: 10px; /* 10px from the top of the note */
+    right: 10px; /* 10px from the right of the note */
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transition for background and scaling */
+}
+
+.saved-notes-list .delete-button:hover {
+    background-color: #a9a9a9; /* Slightly darker grey on hover */
+    transform: scale(1.1); /* Slight scale-up effect on hover for a more interactive feel */
+}
+
+.saved-notes-list .delete-button:active {
+    background-color: #808080; /* Even darker grey on click (active state) */
+}
+
+
+
 /* Grid View */
 .grid-view {
     display: grid;
@@ -202,6 +261,29 @@ h2 {
     top: 5px;  /* Move down by 20 pixels */
     left: 5px; /* Move right by 20 pixels */
 }
+.grid-view .delete-button {
+    background-color: #d3d3d3; /* Light grey background */
+    color: #333; /* Dark grey text for contrast */
+    border: none;
+    font-size: 16px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transition for background and scaling */
+    
+    position: absolute; /* Position the button relative to the note container */
+    top: 10px; /* Position from the top */
+    right: 10px; /* Position from the right */
+}
+.grid-view .delete-button:hover {
+    background-color: #a9a9a9; /* Slightly darker grey on hover */
+    transform: scale(1.1); /* Slight scale-up effect on hover for a more interactive feel */
+}
+.grid-view .delete-button:active {
+    background-color: #808080; /* Even darker grey on click (active state) */
+}
+
 
 
 /* List View */
@@ -209,19 +291,48 @@ h2 {
     background-color: #fff;
     padding: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: relative; /* To position the delete button absolutely within this container */
 }
+
 .list-view .note-list-item:hover {
     background-color: #dee9f3;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
+
 .list-view .note-list-item img {
     display: none; 
 }
+
 .list-view .note-list-item span {
     color: #666666;
     font-size: 16px;
     font-weight: 300;
 }
+
+.list-view .delete-button {
+    background-color: #d3d3d3; /* Light grey background */
+    color: #333; /* Dark grey text for contrast */
+    border: none;
+    font-size: 16px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    position: absolute; /* Position the button relative to the list item */
+    top: 10px; /* 10px from the top */
+    right: 10px; /* 10px from the right */
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transition for background and scaling */
+}
+
+.list-view .delete-button:hover {
+    background-color: #a9a9a9; /* Slightly darker grey on hover */
+    transform: scale(1.1); /* Slight scale-up effect on hover for a more interactive feel */
+}
+
+.list-view .delete-button:active {
+    background-color: #808080; /* Even darker grey on click (active state) */
+}
+
 
 /* View Buttons */
 .view-buttons {

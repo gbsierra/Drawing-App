@@ -9,8 +9,8 @@
 
 //-------------------------------------------    SETUP     -------------------------------------------
 // Get DOM (Document Object Model) elements
-const canvas = document.getElementById('drawingCanvas'); // Visible canvas for drawing
-const context = canvas.getContext('2d'); // 2D rendering context
+const canvas = document.getElementById('drawingCanvas'); // Initial canvas for drawing
+const context = canvas.getContext('2d', {willReadFrequently: true}); // 2D rendering context
 const notebookContainer = document.getElementById('notebookContainer'); // Container for scrolling
 
 // Drawing state and tool settings
@@ -26,17 +26,21 @@ let isPointerDown = false;
 let isTyping = false;
 let selectedRect; // selecting Rect
 let startX, startY, currentX, currentY; //vars for rect
+let undoStack = [];
+let redoStack = [];
+let isPdf = false;
 
 // resize screen on load.
-resizeAndHandle();
+//resizeAndHandle();
 // disable finger touch
 canvas.style.touchAction = 'none';
+addCanvasEventListeners(canvas); // Add event listeners to the canvas
 
 
 
 //---------------------------------------    DRAWING FUNCTIONS    ---------------------------------------
 // handle the right mouse click
-function handleRightClick(event) {
+function handleRightClick(event, canvas) {
     console.log('Right mouse button clicked!', event);
     if(currentTool !== 'eraser'){
         lastTool = currentTool;
@@ -44,17 +48,20 @@ function handleRightClick(event) {
     currentTool = 'eraser'; // Change the tool to eraser on right click
 }
 // handle the right mouse release
-function handleRightClickRelease(event) {
+function handleRightClickRelease(event, canvas) {
     console.log('Right mouse button released!', event);
     if (currentTool === 'eraser') {
-        currentTool=lastTool;
+        currentTool = lastTool;
     }
 }
 // handle pointer down
-function handlePointerDown(event) {
+function handlePointerDown(event, canvas) {
     isPointerDown = true;
     startX = event.offsetX;
     startY = event.offsetY;
+
+    const context = canvas.getContext('2d'); // Get context for this specific canvas
+    undoStack.push(context.getImageData(0, 0, canvas.width, canvas.height));
 
     if (currentTool === 'selector') {
         console.log('pointerdown:', { startX, startY });
@@ -92,14 +99,20 @@ function handlePointerDown(event) {
         context.beginPath();
         context.moveTo(lastX, lastY);
         notebookContainer.style.touchAction = 'none';
+
+        // Save the current canvas state to the undo stack
+        //undoStack.push(context.getImageData(0, 0, canvas.width, canvas.height));
+        redoStack = []; // Clear the redo stack
     }
 }
 // handle pointer up
-function handlePointerUp(event) {
-    if(!isPointerDown){
+function handlePointerUp(event, canvas) {
+    if (!isPointerDown) {
         return;
     }
     isPointerDown = false;
+
+    const context = canvas.getContext('2d'); // Get context for this specific canvas
 
     if (currentTool === 'selector') {
         const startX = selectedRect.x;
@@ -107,31 +120,35 @@ function handlePointerUp(event) {
         const endX = selectedRect.x + selectedRect.width;
         const endY = selectedRect.y + selectedRect.height;
 
-
         console.log('pointerup:', { endX, endY });
 
         // Send dimensions to backend
         sendSelectedAreaToBackend(startX, startY, endX, endY);
-        currentTool=lastTool;
-
+        currentTool = lastTool;
     }
+
     if (event.pointerType === 'pen' || event.pointerType === 'mouse' || event.pointerType === 'eraser') {
         drawing = false;
+        const currentImageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        redoStack = []; // Clear the redo stack
         if (event.button === 2) {
-            handleRightClickRelease(event); // Handle right-click release
+            handleRightClickRelease(event, canvas); // Handle right-click release
         }
         context.closePath();
         context.globalAlpha = 1.0; // Reset transparency
         context.globalCompositeOperation = 'source-over'; // Reset to default drawing mode
         notebookContainer.style.touchAction = 'auto'; // Re-enable touch scrolling
     }
+
+    // Handle tool switch if eraser was used
     if (currentTool === 'eraser' && lastTool !== 'eraser') {
-        setTool(lastTool);
+        setTool(lastTool); // Restore the last tool after eraser is used
     }
+
     isSelecting = false;
 }
-// handle pointer moving
-function handlePointerMove(event) {
+// Modify the eraser functionality
+function handlePointerMove(event, canvas) {
     if (isPointerDown && !isTyping) {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
@@ -141,6 +158,8 @@ function handlePointerMove(event) {
         currentX = (event.clientX - rect.left) * scaleX;
         currentY = (event.clientY - rect.top + notebookContainer.scrollTop) * scaleY;
 
+        const context = canvas.getContext('2d'); // Get context for this specific canvas
+
         if (isSelecting && currentTool === 'selector') {
             selectedRect.width = Math.abs(currentX - startX);
             selectedRect.height = Math.abs(currentY - startY);
@@ -149,12 +168,14 @@ function handlePointerMove(event) {
         } else if (drawing && (event.pointerType === 'pen' || event.pointerType === 'mouse' || event.pointerType === 'eraser')) {
             event.preventDefault();
             const pressure = event.pressure * 1.6 || 1; // Stylus pressure (default 1 if unsupported)
-            context.lineWidth = toolWidth * 1.2 * pressure; // Dynamic width based on pressure
-
-            if (currentTool === 'eraser') {
+            if(currentTool === 'eraser'){
+                context.lineWidth = toolWidth * 8.5 * pressure; // Dynamic width based on pressure
                 context.globalCompositeOperation = 'destination-out'; // Erase instead of draw
-            } else {
+            }
+            else {
+                context.lineWidth = toolWidth * 1.2 * pressure; // Dynamic width based on pressure
                 context.globalCompositeOperation = 'source-over'; // Draw normally
+                context.strokeStyle = toolColor; // Set the stroke color
             }
 
             context.lineTo(currentX, currentY);
@@ -168,6 +189,82 @@ function handlePointerMove(event) {
     }
 }
 
+
+// Undo function
+function undo() {
+    if (undoStack.length === 0) return;
+
+    const context = drawingCanvas.getContext('2d');  // Get the context of the current drawing canvas
+
+    // Save the current canvas state to the redo stack before applying the undo
+    const currentImageData = context.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+    // Retrieve the last saved state from the undo stack
+    const imageData = undoStack.pop();
+
+    if (imageData instanceof ImageData) {
+        // Restore the previous state
+        context.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+        context.putImageData(imageData, 0, 0);
+
+        // Only push the current state to redoStack if we successfully undid
+        redoStack.push(currentImageData);
+    }
+}
+// Redo function
+function redo() {
+    if (redoStack.length === 0) return;
+
+    const context = drawingCanvas.getContext('2d');  // Get the context of the current drawing canvas
+
+    // Save the current canvas state to the undo stack before applying the redo
+    const currentImageData = context.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+    // Retrieve the last saved state from the redo stack
+    const imageData = redoStack.pop();
+
+    if (imageData instanceof ImageData) {
+        // Restore the previous state
+        context.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+        context.putImageData(imageData, 0, 0);
+
+        // Only push the current state to undoStack if we successfully redid
+        undoStack.push(currentImageData);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+// Undo button event listener
+document.getElementById('undoButton').addEventListener('click', function() {
+    undo();  // Call undo for the active canvas
+});
+// Redo button event listener
+document.getElementById('redoButton').addEventListener('click', function() {
+    redo();  // Call redo for the active canvas
+});
+// Keyboard event listener for undo (Ctrl + Z)
+document.addEventListener('keydown', function(event) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+        event.preventDefault();  // Prevent default browser undo action
+        undo();  // Call undo for the active canvas
+    }
+});
+// Keyboard event listener for redo (Ctrl + Shift + Z)
+document.addEventListener('keydown', function(event) {
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'z') {
+        event.preventDefault();  // Prevent default browser redo action
+        redo();  // Call redo for the active canvas
+    }
+});
+
 //---------------------------------------     CANVAS FUNCTIONS     ---------------------------------------
 // sets current tool
 function setTool(tool) {
@@ -175,7 +272,7 @@ function setTool(tool) {
     currentTool = tool;
     lastTool = tool;
     toolColor = tool === 'pen' ? document.getElementById('colorPicker').value : 'yellow';
-    toolWidth = tool === 'pen' ? 2 : 16.5; 
+    toolWidth = tool === 'pen' ? 2 : 16.5;
     document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active')); 
     document.getElementById(`${tool}Button`).classList.add('active'); 
 }
@@ -201,14 +298,16 @@ function handleTextboxCreation() {
     function placeTextbox(event) {
         event.stopPropagation();
         
-        // Get canvas-relative coordinates
+        // Get canvas-relative coordinates, taking zoom into account
         const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
 
         // Draw text on the canvas
-        context.font = '16px Arial'; // Set font (customize as needed)
-        context.fillStyle = 'black'; // Set text color (customize as needed)
+        context.font = '26px Verdana'; // Set font
+        context.fillStyle = toolColor; // Set text color
         context.fillText(textValue, x, y);
 
         // Reset button state and cursor
@@ -222,6 +321,7 @@ function handleTextboxCreation() {
         canvas.addEventListener('click', placeTextbox, { once: true });
     }, 10);
 }
+
 // clears current canvas
 function clearCanvas() {
     if (confirm("Are you sure you want to clear the current the canvas?")) {
@@ -231,19 +331,67 @@ function clearCanvas() {
         console.log('Canvas clearing canceled.');
     }
 }
-// change canvas size to screen size
 function resizeAndHandle() {
     const containerWidth = notebookContainer.clientWidth;
     const containerHeight = notebookContainer.clientHeight;
 
-    // Set canvas width and height to match container size
-    canvas.width = containerWidth;
-    canvas.height = containerHeight;
+    // Store current content only if canvas has content
+    let tempCanvas = null;
+    if (canvasHasContent(canvas)) {
+        tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempContext = tempCanvas.getContext('2d');
+        tempContext.drawImage(canvas, 0, 0);
+    }
 
-    // Adjust display size without clearing content
-    canvas.style.width = `${containerWidth}px`;
-    canvas.style.height = `${containerHeight}px`;
+    // Calculate the scale factor to maintain aspect ratio
+    const originalAspectRatio = canvas.width / canvas.height;
+    const containerAspectRatio = containerWidth / containerHeight;
+
+    let newWidth, newHeight;
+
+    if (containerAspectRatio > originalAspectRatio) {
+        // Container is wider than needed
+        newHeight = containerHeight;
+        newWidth = newHeight * originalAspectRatio;
+    } else {
+        // Container is taller than needed
+        newWidth = containerWidth;
+        newHeight = newWidth / originalAspectRatio;
+    }
+
+    // Update canvas dimensions
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+    canvas.style.width = `${newWidth}px`;
+    canvas.style.height = `${newHeight}px`;
+
+    // Restore content if there was any
+    if (tempCanvas) {
+        context.imageSmoothingEnabled = false;
+        context.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, newWidth, newHeight);
+    }
 }
+
+// Single load handler
+window.addEventListener('load', () => {
+    canvas.width = notebookContainer.clientWidth;
+    canvas.height = notebookContainer.clientHeight;
+    checkForLoadPageFlag();
+});
+
+// Replace the resize event listener with a throttled version
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    if (resizeTimeout) clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        requestAnimationFrame(resizeAndHandle);
+    }, 250);
+});
+
+
+
 // check for empty canvas
 function canvasHasContent(canvas) {
     const context = canvas.getContext('2d');
@@ -304,37 +452,36 @@ function loadPageFromSession() {
         console.error('Error loading note:', error);
     }
 }
-// Save canvas to local storage
 function savePageLocally() {
-    if(canvasHasContent(canvas)){    
-        try {
-            // Save the note details to local storage
-            const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
-            const noteTitle = prompt('   Enter the note title:');
-            
-            // Assuming you have a way to get the canvas image data
-            const image = canvas.toDataURL(); // Get the canvas image data
-
-            const note = {
-                title: noteTitle,
-                lastModified: new Date().toLocaleString(),
-                image: image // Add the image data to the note
-            };
-            notes.push(note);
-            localStorage.setItem('user-saved-notes', JSON.stringify(notes));
-
-            alert(`Note '${note.title}' saved locally.`);
-            console.log(`Note '${note.title}' saved locally.`);
-        } catch (error) {
-            console.error('Error saving note:', error);
-            alert('Failed to save note.');
-        }
+    const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
+    
+    const noteTitle = prompt('Enter the title of your note:');
+    
+    if (!noteTitle) {
+        alert('Title is required to save the note.');
+        return;
     }
-    else{
-        alert(`Canvas empty. Get to work!`);
-    }
+
+    const currentNote = {
+        title: noteTitle,
+        image: canvas.toDataURL(),  // Save the image from the canvas
+        lastModified: new Date().toISOString(),
+        isPdf: isPdf  // Save the 'isPdf' flag
+    };
+
+    notes.push(currentNote);  // Add the new note to the list
+    localStorage.setItem('user-saved-notes', JSON.stringify(notes));  // Save to localStorage
+
+    console.log('Note saved:', currentNote);
+    alert('Note saved successfully.');
 }
-// check flag upon loading page, calls loadPageLocally
+
+
+
+
+
+
+// check flag upon loading page, calls loadPageLocally ( for loading in notes )
 function checkForLoadPageFlag() {
     const loadPageFlag = localStorage.getItem('loadingPageFlag');
     const noteIndex = localStorage.getItem('noteIndex'); // Retrieve note index if set
@@ -347,74 +494,263 @@ function checkForLoadPageFlag() {
       localStorage.removeItem('noteIndex');
     }
 }
-// load the page locally with optional parameters (node index, clear current canvas?)
 function loadPageLocally(noteIndex = null, clear = false) {
-    //set notes to amount of notes saved
     const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
-    //if theres notes saved
-    if (notes.length > 0) {
-        let selectedNoteIndex = noteIndex;
-
-        // Only prompt for selection if noteIndex is null
-        if (selectedNoteIndex === null) {
-            let notesList = 'Select a note to load:\n      Title:              Last Modified: \n';
-            notes.forEach((note, index) => {
-                notesList += `${index + 1}.   ${note.title},  -  ${note.lastModified}\n`;
-            });
-            selectedNoteIndex = prompt(notesList + '\nEnter the number of the note you want to load:') - 1;
-        }
-
-        // Check if the selected index is valid
-        if (selectedNoteIndex >= 0 && selectedNoteIndex < notes.length) {
-            const selectedNote = notes[selectedNoteIndex];
-            alert(`   Loading selected note..\n\n        Title: ${selectedNote.title}\n  Last Modified: ${selectedNote.lastModified}`);
-            console.log(`Note loaded locally. \nTitle: ${selectedNote.title}\nLast Modified: ${selectedNote.lastModified}`);
-            
-            const img = new Image();
-            img.src = selectedNote.image;
-            
-            img.onload = function() {
-                if (clear) {
-                    clearCanvas(); // Function to clear the canvas if needed
-                }
-                context.drawImage(img, 0, 0); // Draw the loaded image on the canvas
-            };
-            
-            img.onerror = function() {
-                console.error('Error loading image.');
-                alert('Failed to load the image associated with the note.');
-            };
-        } else {
-            alert('Invalid selection.');
-        }
-    } else {
+    
+    if (notes.length === 0) {
         alert('No saved notes found.');
+        return;
+    }
+
+    let selectedNoteIndex = noteIndex;
+    
+    // Prompt for selection if no index provided
+    if (selectedNoteIndex === null) {
+        let notesList = 'Select a note to load:\n      Title:              Last Modified:\n';
+        notes.forEach((note, index) => {
+            notesList += `${index + 1}.   ${note.title.padEnd(15)} - ${new Date(note.lastModified).toLocaleString()}\n`;
+        });
+        
+        const input = prompt(notesList + '\nEnter the number of the note you want to load:');
+        selectedNoteIndex = parseInt(input) - 1;
+    }
+
+    // Validate selected index
+    if (isNaN(selectedNoteIndex) || selectedNoteIndex < 0 || selectedNoteIndex >= notes.length) {
+        alert('Invalid selection.');
+        return;
+    }
+
+    const selectedNote = notes[selectedNoteIndex];
+    console.log(`Loading note:\nTitle: ${selectedNote.title}\nLast Modified: ${selectedNote.lastModified}\n is file: ${selectedNote.isPdf}\n`);
+
+    // Load the saved composite image data
+    const img = new Image();
+    img.src = selectedNote.image; // Load image from saved note
+
+    img.onload = function() {
+        // Ensure the canvas is cleared if the `clear` flag is set
+        if (clear && typeof clearCanvas === 'function') {
+            clearCanvas();
+        }
+
+        const container = canvas.parentElement;
+
+        // Check if the saved note is a PDF
+        if (selectedNote.isPdf) {
+            // Apply the grey background for PDF notes
+            //container.style.backgroundColor = '#d3d3d3'; // Grey background for PDF notes
+            //console.log('PDF note');
+
+            linesCanvas.style.display = 'none';
+
+        } else {
+            // Apply the default background for regular image notes
+            container.style.backgroundColor = '#ffffff'; // Light grey background for regular notes
+            //console.log('regular note');
+        }
+
+        // Container styling
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.alignItems = 'center';
+        container.style.padding = '10px';
+        container.style.overflowY = 'auto';
+        container.style.overflowX = 'auto';
+        container.style.height = 'auto';
+        container.style.width = '100%';
+        container.style.minHeight = '100vh';
+
+        // Resize canvas to match image dimensions
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.style.width = `${img.width}px`;
+        canvas.style.height = `${img.height}px`;
+
+        const context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);  // Clear any existing content
+        context.drawImage(img, 0, 0);
+
+        console.log(`success!`);
+    };
+
+    img.onerror = function() {
+        console.error('Error loading image:', selectedNote.image);
+        alert('Failed to load the note image.');
+    };
+}
+
+
+
+
+// Main function to get user's load selection
+function getLoadSelection() {
+    const loadOption = prompt("Where do you want to load the note from?\n1. Local Storage\n2. PC File");
+    
+    switch (loadOption) {
+        case '1':
+            loadPageLocally();
+            break;
+        case '2':
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.click();
+            } else {
+                console.error('File input element not found');
+                alert('Error: File input not available');
+            }
+            break;
+        default:
+            alert("Invalid selection. Please enter '1' or '2'.");
     }
 }
-// Gets user input for loadPageLocally
-function getLoadSelection() {
-    const notes = JSON.parse(localStorage.getItem('user-saved-notes')) || [];
-  
-    if (notes.length > 0) {
-      let notesList = 'Select a note to load:\n  Title:              Last Modified: \n';
-      notes.forEach((note, index) => {
-        notesList += `${index + 1}.   ${note.title},  -  ${new Date(note.lastModified).toLocaleString()}\n`;
-      });
-  
-      const userSelectedIndex = parseInt(prompt(notesList + '\nEnter the number of the note you want to load:'), 10) - 1;
-  
-      if (!isNaN(userSelectedIndex) && userSelectedIndex >= 0 && userSelectedIndex < notes.length) {
-        loadPageLocally(userSelectedIndex, true);
-        return userSelectedIndex;
-      } else {
-        alert('Invalid selection. Please enter a valid number corresponding to the note.');
-        return null;
-      }
-    } else {
-      alert('No saved notes found.');
-      return null;
-    }
-}    
+
+async function loadFromPCFile(event) {
+    undoStack = [];
+    redoStack = [];
+
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileReader = new FileReader();
+
+    fileReader.onload = async function (e) {
+        const arrayBuffer = e.target.result;
+
+        linesCanvas.style.display = 'none';
+        const container = canvas.parentElement;
+        //container.style.backgroundColor = '#d3d3d3'; // Set container background color
+
+        if (file.name.toLowerCase().endsWith('.pdf')) {
+            isPdf = true;
+            if (typeof pdfjsLib === 'undefined') {
+                alert('PDF.js library not loaded. Please include it in your HTML.');
+                return;
+            }
+
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+
+            try {
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                console.log('PDF loaded:', file.name, 'Pages:', pdf.numPages);
+                alert(`PDF Loaded from PC:\nFile: ${file.name}\nPages: ${pdf.numPages}`);
+
+                container.innerHTML = '';
+                container.appendChild(canvas);
+                
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.alignItems = 'center';
+                container.style.padding = '10px';
+                container.style.overflowY = 'auto';
+                container.style.overflowX = 'auto';
+                container.style.height = 'auto';
+                container.style.width = '100%';
+                container.style.minHeight = '100vh';
+
+                const SCALE = 1.5; // Zoom factor (1.5x original size, adjust as needed)
+                const GAP = 20; // Increased gap between pages (was 10px)
+                const context = canvas.getContext('2d');
+                let totalHeight = 0;
+                let maxWidth = 0;
+                const pageCanvases = [];
+
+                // Step 1: Render each page to an offscreen canvas with zoom
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: SCALE });
+
+                    const offscreenCanvas = document.createElement('canvas');
+                    offscreenCanvas.width = viewport.width;
+                    offscreenCanvas.height = viewport.height;
+                    const offscreenContext = offscreenCanvas.getContext('2d');
+
+                    const renderContext = {
+                        canvasContext: offscreenContext,
+                        viewport: viewport
+                    };
+
+                    await page.render(renderContext).promise;
+                    pageCanvases.push(offscreenCanvas);
+                    totalHeight += viewport.height + (pageNum > 1 ? GAP : 0);
+                    maxWidth = Math.max(maxWidth, viewport.width);
+                    console.log(`Page ${pageNum} rendered offscreen: ${viewport.width}x${viewport.height}`);
+                }
+
+                // Step 2: Set up main canvas with zoomed dimensions
+                canvas.width = maxWidth;
+                canvas.height = totalHeight;
+                canvas.style.width = `${maxWidth}px`;
+                canvas.style.height = `${totalHeight}px`;
+                context.clearRect(0, 0, canvas.width, canvas.height); // Ensure canvas is clear
+
+                const canvasState = [];
+                let currentYPosition = 0;
+
+                // Step 3: Composite all pages
+                for (let i = 0; i < pageCanvases.length; i++) {
+                    const xOffset = (maxWidth - pageCanvases[i].width) / 2;
+                    context.drawImage(pageCanvases[i], xOffset, currentYPosition);
+                    currentYPosition += pageCanvases[i].height + GAP;
+
+                    const currentImageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    canvasState.push(currentImageData);
+                    console.log(`Page ${i + 1} composited at y=${currentYPosition - pageCanvases[i].height - GAP}, width=${pageCanvases[i].width}`);
+                }
+
+                undoStack.push(...canvasState);
+                redoStack = [];
+
+                // Do NOT save to localStorage; just render or use the note in the current session
+                const note = {
+                    title: file.name,
+                    image: canvas.toDataURL(),  // Save image data
+                    lastModified: Date.now(),
+                    isPdf: true // Flag for PDF files
+                };
+
+                // If you want to render it, show a message or do something with the note
+                console.log('PDF rendered, note not saved:', note);
+                // If you want to store the note temporarily in memory, do it here without saving to localStorage
+
+                // Optional: For example, displaying the title and PDF info in the UI
+                const noteDisplay = document.createElement('div');
+                noteDisplay.innerHTML = `
+                    <h2>${note.title}</h2>
+                    <p>Last modified: ${new Date(note.lastModified).toLocaleString()}</p>
+                    <p>PDF note rendered successfully.</p>
+                `;
+                container.appendChild(noteDisplay);
+
+                addCanvasEventListeners(canvas);
+                
+                container.scrollTop = 0;
+                console.log(`Rendering complete. Canvas size: ${maxWidth}x${totalHeight}`);
+
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                alert('Error: Invalid PDF file');
+            }
+        }
+    };
+
+    fileReader.onerror = function () {
+        alert('Error reading the file.');
+    };
+
+    fileReader.readAsArrayBuffer(file);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 //---------------------------------------     PREDICTION BUTTON     ---------------------------------------
 // keydown 's' shortcut
@@ -531,18 +867,35 @@ async function sendSelectedAreaToBackend(x1, y1, x2, y2) {
 
 
 //--------------------------------------------     EVENT LISTENERS     --------------------------------------------
-window.addEventListener('orientationchange', loadPageFromSession); //handle orientationchange
-window.addEventListener('resize', loadPageFromSession); //handle webpage resizing
 
-canvas.addEventListener('pointerdown', handlePointerDown);
-canvas.addEventListener('pointermove', handlePointerMove);
-canvas.addEventListener('pointerup', handlePointerUp);
-canvas.addEventListener('mouseup', handlePointerUp);
-canvas.addEventListener('pointerout', handlePointerUp);
-canvas.addEventListener('contextmenu', function(event) {  //right click
-    event.preventDefault();
-    handleRightClick(event);
-});
+function addCanvasEventListeners(canvas) {
+    canvas.addEventListener('pointerdown', function(event) {
+        handlePointerDown(event, canvas);
+    });
+    canvas.addEventListener('pointermove', function(event) {
+        handlePointerMove(event, canvas);
+    });
+    canvas.addEventListener('pointerup', function(event) {
+        handlePointerUp(event, canvas);
+    });
+    canvas.addEventListener('mouseup', function(event) {
+        handlePointerUp(event, canvas); 
+    });
+    canvas.addEventListener('pointerout', function(event) {
+        handlePointerUp(event, canvas);
+    });
+    canvas.addEventListener('contextmenu', function (event) {
+        event.preventDefault();  // Prevent the default right-click context menu
+        //console.log('Right mouse button context menu event prevented!');
+    });
+    canvas.addEventListener('mousedown', function(event) { //right click
+        if (event.button === 2) {  // Check if it's the right mouse button (button 2 corresponds to right-click)
+            event.preventDefault();  // Prevent the default context menu
+            handleRightClick(event, canvas);
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => { // double tap
     const linesCanvas = document.getElementById('linesCanvas');
     
@@ -634,6 +987,13 @@ document.addEventListener('DOMContentLoaded', () => {   // TO-DO LIST notes
         const li = document.createElement('li'); // Create a new list item
         li.textContent = noteText; // Set its text to the note text
         notesList.appendChild(li); // Add it to the notes list
+
+        // Add double-click event listener to delete the note
+        li.addEventListener('dblclick', () => {
+            notesList.removeChild(li); // Remove the list item from the DOM
+            savedNotes = savedNotes.filter(note => note !== noteText); // Remove the note from the array
+            localStorage.setItem('user-current-toDo', JSON.stringify(savedNotes)); // Update localStorage
+        });
     });
 
     // Add new note on form submit
@@ -648,10 +1008,25 @@ document.addEventListener('DOMContentLoaded', () => {   // TO-DO LIST notes
             li.textContent = noteText; // Set the text of the list item to the note text
             notesList.appendChild(li); // Append the new list item to the notes list
 
+            // Add double-click event listener to delete the note
+            li.addEventListener('dblclick', () => {
+                notesList.removeChild(li); // Remove the list item from the DOM
+                savedNotes = savedNotes.filter(note => note !== noteText); // Remove the note from the array
+                localStorage.setItem('user-current-toDo', JSON.stringify(savedNotes)); // Update localStorage
+            });
+
             savedNotes.push(noteText); // Add the note text to the array of saved notes
             localStorage.setItem('user-current-toDo', JSON.stringify(savedNotes)); // Save the updated notes array to localStorage
 
             noteInput.value = ''; // Clear the input field
+        }
+    });
+
+    // Add keydown event listener to noteInput to handle Enter key
+    noteInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent default behavior (new line)
+            noteForm.dispatchEvent(new Event('submit')); // Trigger form submission
         }
     });
 
@@ -662,6 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {   // TO-DO LIST notes
         localStorage.removeItem('user-current-toDo'); // Remove notes from localStorage
     });
 });
+
 document.addEventListener("DOMContentLoaded", function() {  // TO-DO LIST toggle button
     var toggleButton = document.getElementById("toggleToDoSection");
     var toDoBar = document.getElementById("notesFeature");
@@ -678,6 +1054,10 @@ document.addEventListener("DOMContentLoaded", function() {  // TO-DO LIST toggle
         }
     });
 });
-
+/*
 window.addEventListener('resize', resizeAndHandle); // Resize the canvas when the window is resized
 window.onload = checkForLoadPageFlag; // check for flag (coming from menu.html?)
+window.onload = resizeAndHandle;
+window.addEventListener('orientationchange', loadPageFromSession); //handle orientationchange
+window.addEventListener('resize', loadPageFromSession); //handle webpage resizing */
+
