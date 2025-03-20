@@ -29,6 +29,13 @@ This **Drawing App** is a personal project I built to practice my front-end and 
 - **Save Your Art**: Save your drawing to local storage or indexed database for later use.
 - **User-friendly Interface**: An easy-to-navigate interface for beginners to experienced artists.
 
+### 📸 Screenshots
+
+- **Canvas in Action**:  
+  ![Canvas in Action](/screenshots/canvas.png)  
+- **Prediction Button**:  
+  ![Model Predictions](/screenshots/prediction.png)
+
 
 ---
 
