@@ -23,11 +23,11 @@ This **Drawing App** is a personal project I built to practice my front-end and 
 
 ## ⚡ Features
 
+- **Text Prediction**: Send your work to the back-end for prediction by pre-trained models!
 - **Pen & Text Colors**: Choose from a variety of colors to create your masterpiece.
 - **Undo & Redo**: Don't like your last stroke? Simply undo or redo it.
 - **Save Your Art**: Save your drawing to local storage or indexed database for later use.
 - **User-friendly Interface**: An easy-to-navigate interface for beginners to experienced artists.
-- **Text Prediction**: Send your work to the back-end for prediction by pre-trained models.
 
 
 ---
@@ -57,7 +57,6 @@ To get started with the **Drawing App**, follow these simple steps:
 4. **Install Front-End Dependencies**  
     If you haven't already, install the necessary front-end dependencies for npm:
     ```sh
-    cd frontend
     npm install
     ```
 
@@ -71,6 +70,8 @@ Once you've installed the necessary dependencies, you're ready to start the app.
 
 To launch the front-end of the app, run the following command in your terminal:
 ```sh
+cd src 
+cd frontend
 npm start
 ```
 
@@ -78,5 +79,6 @@ npm start
 
 To launch the back-end of the app, run the following command in your terminal:
 ```sh
+cd ../backend
 python canvas_backend.py
 ```
