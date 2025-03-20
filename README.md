@@ -8,20 +8,21 @@ Welcome to my **Drawing App**!
 
 - [🎯 Introduction](#introduction)
 - [⚡ Features](#features)
+- [📸 Screenshots](#screenshots)
 - [🛠️ Installation](#installation)
 - [🚀 Usage](#usage)
-- [🤝 Contributing](#contributing)
+- [🤝 Contributing](CONTRIBUTING.md)
 
 ---
 
-## 🎯 Introduction
+<h2 id="introduction">🎯 Introduction</h2>
 
 This **Drawing App** is a personal project I built to practice my front-end and back-end skills. It's a simple application where you can be creative or be productive. The app features a clean, responsive canvas where you can use different drawing tools to let your ideas flow.
 
 
 ---
 
-## ⚡ Features
+<h2 id="features">⚡ Features</h2>
 
 - **Text Prediction**: Send your work to the back-end for prediction by pre-trained models!
 - **Pen & Text Colors**: Choose from a variety of colors to create your masterpiece.
@@ -29,7 +30,7 @@ This **Drawing App** is a personal project I built to practice my front-end and 
 - **Save Your Art**: Save your drawing to local storage or indexed database for later use.
 - **User-friendly Interface**: An easy-to-navigate interface for beginners to experienced artists.
 
-### 📸 Screenshots
+<h2 id="screenshots">🛠️ Screenshots</h2>
 
 - **Canvas in Action**:  
   ![Canvas in Action](/screenshots/canvas.png)  
@@ -39,7 +40,7 @@ This **Drawing App** is a personal project I built to practice my front-end and 
 
 ---
 
-## 🛠️ Installation
+<h2 id="installation">📸 Installation</h2>
 
 To get started with the **Drawing App**, follow these simple steps:
 
@@ -69,7 +70,7 @@ To get started with the **Drawing App**, follow these simple steps:
 
 ---
 
-## 🚀 Usage
+<h2 id="usage">🚀 Usage</h2>
 
 Once you've installed the necessary dependencies, you're ready to start the app.
 
